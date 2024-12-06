@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -56,23 +57,51 @@ class AuthController extends Controller
     // Handle role selection and redirect to the appropriate dashboard
     public function handleRoleSelection(Request $request)
     {
-        $request->validate([
-            'roles2' => 'required|string|in:Dosen Wali,Kepala Prodi,Dekan, ',
-        ]);
+        $roleSelected = $request->input('role'); // Role yang dipilih oleh pengguna
+        $user = Auth::user(); // Ambil pengguna yang sedang login
     
-        $role = $request->input('roles2');
+        // Debug: tampilkan informasi tentang user dan role yang dipilih
+        \Log::info('User roles1: ' . $user->roles1);
+        \Log::info('User roles2: ' . $user->roles2);
+        \Log::info('Role selected: ' . $roleSelected);
+
+        // Simpan peran yang dipilih ke dalam session
+        session(['roleSelected' => $roleSelected]);
     
-        // Redirect berdasarkan role yang dipilih
-        switch ($role) {
-            case 'Dosen Wali':
-                return redirect()->route('dashboardDosen');
-            case 'Kepala Prodi':
-                return redirect()->route('dashboardKaprodi');
-            case 'Dekan':
-                return redirect()->route('dashboardDekan');
-            default:
-                return redirect()->back()->withErrors('Role tidak valid.');
+        // Cek kondisi berdasarkan roles1 dan roles2
+        if ($user->roles1 === 'dosen' && $user->roles2 === 'kaprodi') {
+            // Jika user memilih 'dekan'
+            if ($roleSelected === 'dekan') {
+                return redirect()->route('notPage'); // Arahkan ke halaman notPage
+            } elseif ($roleSelected === 'kaprodi') {
+                return redirect()->route('dashboardKaprodi'); // Arahkan ke dashboard Kaprodi
+            } elseif ($roleSelected === 'dosen_wali') {
+                return redirect()->route('dashboardDosen'); // Arahkan ke dashboard Dosen Wali
+            }
         }
+    
+        if ($user->roles1 === 'dosen' && $user->roles2 === 'dekan') {
+            // Jika user memilih 'kaprodi'
+            if ($roleSelected === 'kaprodi') {
+                return redirect()->route('notPage'); // Arahkan ke halaman notPage
+            } elseif ($roleSelected === 'dekan') {
+                return redirect()->route('dashboardDekan'); // Arahkan ke dashboard Dekan
+            } elseif ($roleSelected === 'dosen_wali') {
+                return redirect()->route('dashboardDosen'); // Arahkan ke dashboard Dosen Wali
+            }
+        }
+    
+        // Tambahkan kondisi lain sesuai kebutuhan jika ada
+    
+        // Default redirect jika tidak ada kondisi yang terpenuhi
+        return redirect()->route('roleSelection')->withErrors(['Role tidak valid']);
+    }
+    
+    
+
+    public function notPage()
+    {
+        return view('auth.notPage'); // Pastikan ini mengarah ke view yang benar
     }
     
     

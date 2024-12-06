@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
             'email' => 'kusworo@lectures.university.ac.id',
             'password' => Hash::make('password'),
             'roles1' => 'dosen',
-            'roles2' => 'kaprodi',
+            'roles2' => 'dekan',
             'created_at' => now(), // Set created_at to current timestamp
             'remember_token' => Str::random(100) // Generate a random remember token
         ]);
@@ -107,6 +107,173 @@ class UserSeeder extends Seeder
             'roles2' => '',
             'created_at' => now(), // Set created_at to current timestamp
             'remember_token' => Str::random(100) // Generate a random remember token
+        ]);
+
+        User::create([
+            'id'=>'9',
+            'username' => 'Beta Noranita',
+            'email' => 'beta@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D2
+        User::create([
+            'id'=>'10',
+            'username' => 'Dr. Aris Puji Widodo',
+            'email' => 'aris@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D3
+        User::create([
+            'id'=>'11',
+            'username' => 'Dr. Indra Waspada',
+            'email' => 'indra@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D4
+        User::create([
+            'id'=>'12',
+            'username' => 'Dr. Retno Kusumaningrum',
+            'email' => 'retno@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D5
+        User::create([
+            'id'=>'13',
+            'username' => 'Rismiyati',
+            'email' => 'rismiyati@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D6
+        User::create([
+            'id'=>'14',
+            'username' => 'Sandy Kurniawan',
+            'email' => 'sandy@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D7
+        User::create([
+            'id'=>'15',
+            'username' => 'Yunila Dwi Putri Ariyanti',
+            'email' => 'yunila@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D8
+        User::create([
+            'id'=>'16',
+            'username' => 'Dr. Yeva Fadhilah Ashari',
+            'email' => 'yeva@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D9
+        User::create([
+            'id'=>'17',
+            'username' => 'Etna Vianita',
+            'email' => 'etna@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D10
+        User::create([
+            'id'=>'18',
+            'username' => 'Prof. Dr. Dra. Meiny Suzery',
+            'email' => 'meiny@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D11
+        User::create([
+            'id'=>'19',
+            'username' => 'Dr. rer. nat. Anto Budiharjo',
+            'email' => 'anto@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D12
+        User::create([
+            'id'=>'20',
+            'username' => 'Prof. Dr. Widowati',
+            'email' => 'widowati@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+        
+        // Dosen D13
+        User::create([
+            'id'=>'21',
+            'username' => 'Arief Rachman Hakim',
+            'email' => 'arief@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
+        ]);
+
+        // Dosen touhou iloveyou dewi suwako
+        User::create([
+            'id'=>'22',
+            'username' => 'Dewi Suwako Moriya',
+            'email' => 'suwako@lectures.university.ac.id',
+            'password' => Hash::make('password'),
+            'roles1' => 'dosen',
+            'roles2' => '',
+            'created_at' => now(),
+            'remember_token' => Str::random(100)
         ]);
         
     }

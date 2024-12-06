@@ -3,129 +3,227 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
 
 class DashboardController extends Controller
 {
     // Method untuk Dashboard Dosen
     public function index()
     {
-        // Data dummy untuk dosen
         $dosen = DB::table('dosen')
                     ->join('users', 'dosen.id_user', '=', 'users.id')
                     ->join('program_studi', 'dosen.prodi_id', '=', 'program_studi.id_prodi')
+                    ->crossJoin('periode_akademik')
+                    ->orderBy('periode_akademik.created_at', 'desc') // Mengurutkan berdasarkan timestamp terbaru
                     ->select(
-                        'dosen.nip',
-                        'dosen.nama as dosen_nama',         // Alias to avoid conflict
-                        'program_studi.nama as prodi_nama', // Alias for program_studi's nama
+                        'dosen.nip',                    // Pastikan NIP sudah dipilih
+                        'dosen.nama as dosen_nama',
+                        'program_studi.nama as prodi_nama',
                         'dosen.prodi_id',
-                        'users.username'
+                        'users.username',
+                        'periode_akademik.nama_periode'
                     )
-                    ->where ('dosen.id_user', '=', auth()->id())
-                    ->first(); 
+                    ->where('dosen.id_user', '=', auth()->id())
+                    ->first();
+        // dd($dosen);
         return view('dashboardDosen', compact('dosen'));
-
     }
+
 
     // Method untuk Dashboard Kaprodi
     public function indexKaprodi()
     {
         $kaprodi = DB::table('dosen')
-                        ->join('users', 'dosen.id_user', '=', 'users.id') // Corrected 'user' to 'users'
+                        ->join('users', 'dosen.id_user', '=', 'users.id')
                         ->join('program_studi', 'dosen.prodi_id', '=', 'program_studi.id_prodi')
-                        ->where('users.roles2', '=', 'kaprodi') // Filtering by 'kaprodi' role
-                        ->where('dosen.id_user', '=', auth()->id()) // Ensuring data for logged-in user
+                        ->crossJoin('periode_akademik')
+                        ->where('users.roles1', '=', 'dosen') // Pastikan ini sesuai dengan peran yang tepat
+                        ->where('users.roles2', '=', 'kaprodi') // Pastikan ini juga sesuai
+                        ->where('dosen.id_user', '=', auth()->id())
+                        ->orderBy('periode_akademik.created_at', 'desc') // Mengurutkan berdasarkan timestamp terbaru
                         ->select(
                             'dosen.nip',
-                            'dosen.nama as dosen_nama',         // Alias to avoid conflict
-                            'program_studi.nama as prodi_nama', // Alias for program_studi's nama
+                            'dosen.nama as dosen_nama',
+                            'program_studi.nama as prodi_nama',
                             'dosen.prodi_id',
-                            'users.username'
+                            'users.username',
+                            'periode_akademik.nama_periode'
                         )
                         ->first();
-    
         return view('dashboardKaprodi', compact('kaprodi'));
     }
-    
 
 
-    // Method untuk Dashboard Mahasiswa
+
+    //Method untuk dashboard Mahasiswa
     public function indexMahasiswa()
-{
-    $mahasiswa = DB::table('mahasiswa')
-                ->join('users', 'mahasiswa.id_user', '=', 'users.id')
-                ->join('program_studi', 'mahasiswa.id_prodi', '=', 'program_studi.id_prodi')
-                ->join('dosen', 'mahasiswa.id_dosen', '=', 'dosen.id_dosen')
-                ->where('mahasiswa.id_user', auth()->id())
-                ->select(
-                    'mahasiswa.nim',
-                    'mahasiswa.nama as nama_mhs',
-                    'program_studi.nama as prodi_nama',
-                    'dosen.nama as nama_doswal',
-                    'dosen.nip',
-                    'users.username'
-                )
-                
-                ->first();
+    {
+        $currentDate = Carbon::now()->toDateString(); // Tanggal saat ini
+        // dump($currentDate);
+
+        // Ambil periode akademik terbaru berdasarkan id_periode
+        $periodeTerbaru = DB::table('periode_akademik')
+            ->orderBy('id_periode', 'DESC') // Mengambil periode akademik berdasarkan id_periode terbaru
+            ->first();
+        // dump($periodeTerbaru);
+
+        // Pastikan periode akademik terbaru ditemukan
+        if (!$periodeTerbaru) {
+            return view('dashboardMahasiswa', compact('mahasiswa', 'masaIRS'));
+        }
+        
+        // Ambil data mahasiswa dengan periode akademik terbaru
+        $mahasiswa = DB::table('mahasiswa')
+            ->join('users', 'mahasiswa.id_user', '=', 'users.id')
+            ->join('program_studi', 'mahasiswa.id_prodi', '=', 'program_studi.id_prodi')
+            ->join('dosen', 'mahasiswa.id_dosen', '=', 'dosen.id_dosen')
+            ->join('progress_mahasiswa as prg', 'prg.id_mahasiswa', '=', 'mahasiswa.id_mahasiswa')
+            ->crossJoin('periode_akademik')
+            ->join('kalender_akademik', 'kalender_akademik.id_periode', '=', 'periode_akademik.id_periode')
+            ->where('mahasiswa.id_user', auth()->id())
+            ->where('kalender_akademik.id_periode', $periodeTerbaru->id_periode) // Menggunakan periode akademik terbaru
+            ->whereIn('kalender_akademik.kode_kegiatan', ['isiIRS', 'gantiIRS', 'batalIRS']) // Mengambil kode kegiatan IRS
+            ->orderBy('periode_akademik.id_periode', 'desc') // Mengurutkan berdasarkan periode terbaru
+            ->select(
+                'mahasiswa.nim',
+                'mahasiswa.nama as nama_mhs',
+                'program_studi.nama as prodi_nama',
+                'dosen.nama as nama_doswal',
+                'dosen.nip',
+                'users.username',
+                'periode_akademik.nama_periode',
+                'prg.IPk as IPk',
+                'prg.SKSk as SKSk',
+                'prg.semester_studi as semester',
+                'kalender_akademik.tanggal_mulai',
+                'kalender_akademik.tanggal_selesai'
+            )
+            ->first();
+
+        // Ambil masa IRS berdasarkan periode akademik terbaru dan rentang waktu
+        $fetchPeriodeISIIRS = DB::table('kalender_akademik')
+            ->join('periode_akademik', 'periode_akademik.id_periode', '=', 'kalender_akademik.id_periode')
+            ->where('kalender_akademik.id_periode', $periodeTerbaru->id_periode) // Menggunakan periode akademik terbaru
+            ->where('kalender_akademik.kode_kegiatan','=','isiIRS')
+            ->select(
+                'kalender_akademik.tanggal_mulai', // Menggunakan nama kolom yang valid
+                'kalender_akademik.tanggal_selesai', // Menggunakan nama kolom yang valid
+                'kalender_akademik.nama_kegiatan' // Untuk kebutuhan tambahan
+            )
+            ->first();
+
+        // dump($mahasiswa);
     
-    return view('dashboardMahasiswa', compact('mahasiswa'));  // Gunakan dot notation
-}
+        // // Ambil masa IRS berdasarkan periode akademik terbaru dan rentang waktu
+        $periodeIRS = DB::table('kalender_akademik')
+            ->join('periode_akademik','periode_akademik.id_periode','=','kalender_akademik.id_periode')
+            ->where('kalender_akademik.id_periode', $periodeTerbaru->id_periode) // Menggunakan periode akademik terbaru
+            ->where(function ($query) use ($currentDate) {
+                $query->whereIn('kode_kegiatan', ['isiIRS', 'gantiIRS', 'batalIRS'])
+                    ->whereDate('tanggal_mulai', '<=', $currentDate)
+                    ->whereDate('tanggal_selesai', '>=', $currentDate);
+            })
+            ->pluck('kalender_akademik.nama_kegiatan')
+            ->first();
+        // dump($periodeIRS);
+        
+        // Tetapkan nilai masa IRS berdasarkan hasil query
+        $masaIRS = $periodeIRS ?? null;
+        // dump($masaIRS);
+        
+        // Kirim data ke view
+        return view('dashboardMahasiswa', compact('mahasiswa', 'masaIRS','fetchPeriodeISIIRS',));
+    }
+    
+    
+    
+    
+    
+    
+
+    
+
+    // public function indexMahasiswa()
+    // {
+    //     $mahasiswa = DB::table('mahasiswa')
+    //                 ->join('users', 'mahasiswa.id_user', '=', 'users.id')
+    //                 ->join('program_studi', 'mahasiswa.id_prodi', '=', 'program_studi.id_prodi')
+    //                 ->join('dosen', 'mahasiswa.id_dosen', '=', 'dosen.id_dosen')
+    //                 ->join('progress_mahasiswa as prg' , 'prg.id_mahasiswa' , '=' , 'mahasiswa.id_mahasiswa')
+    //                 ->crossJoin('periode_akademik')
+    //                 ->where('mahasiswa.id_user', auth()->id())
+    //                 ->orderBy('periode_akademik.created_at', 'desc') // Mengurutkan berdasarkan timestamp terbaru
+    //                 ->select(
+    //                     'mahasiswa.nim',
+    //                     'mahasiswa.nama as nama_mhs',
+    //                     'program_studi.nama as prodi_nama',
+    //                     'dosen.nama as nama_doswal',
+    //                     'dosen.nip',
+    //                     'users.username',
+    //                     'periode_akademik.nama_periode',
+    //                     'prg.IPk as IPk',
+    //                     'prg.SKSk as SKSk',
+    //                     'prg.semester_studi as semester'
+    //                 ) 
+    //                 ->first();  // Ambil baris pertama dengan timestamp terbaru
+    //     return view('dashboardMahasiswa', compact('mahasiswa'));
+    // }
+
+    
+    
+
     //Method untuk Dasboard Dekan
     public function indexDekan()
     {
-        //Data dummy untuk dekan
-        $data = [
-            'dekan' => [
-                'name' => 'Sherlock Holmes',
-                'nip' => '194577123475985',
-                'program_studi' => 'S1-Informatika',
-                'roles1' => 'dosen',
-                'roles2' => 'dekan'
-            ],
-            'semester' => [
-                'current' => '2024/2025 Ganjil',
-                'period' => '1 Mar - 2 April'
-            ],
-            'stats' => [
-                'semester' => 5,
-                'ipk' => '3.6/4.0',
-                'sksk' => 86
-            ],
-            'status' => [
-                'irs' => 'ditolak', // or 'disetujui', 'pending'
-                'registrasi' => true
-            ],
-            'progress' => [
-                'belum_mengusulkan' => ['count' => 1, 'total' => 6],
-                'telah_dikonfirmasi' => ['count' => 4, 'total' => 6],
-                'belum_dikonfirmasi' => ['count' => 1, 'total' => 6]
-            ]
-        ];
-            return view('dashboardDekan', compact('data'));
+        // Debugging query langsung
+        $dekan = DB::table('dosen')
+                    ->join('users', 'dosen.id_user', '=', 'users.id')
+                    ->join('program_studi', 'dosen.prodi_id', '=', 'program_studi.id_prodi')
+                    ->crossJoin('periode_akademik')
+                    ->where('users.roles1', '=', 'dosen')
+                    ->where('users.roles2', '=', 'dekan')
+                    ->where('dosen.id_user', '=', auth()->id())
+                    ->orderBy('periode_akademik.created_at', 'desc') // Mengurutkan berdasarkan timestamp terbaru
+                    ->select(
+                        'dosen.nip',
+                        'dosen.nama as dosen_nama',
+                        'program_studi.nama as prodi_nama',
+                        'dosen.prodi_id',
+                        'users.username',
+                        'periode_akademik.nama_periode'
+                    )
+                    ->first();
+        Log::debug('Kaprodi Data:', (array) $dekan);  // Log data yang diambil untuk diperiksa
+
+        if (!$dekan) {
+            return redirect()->back()->with('error', 'Kaprodi tidak ditemukan.');
+        }
+        return view('dashboardDekan', compact('dekan'));
     }
+
+    
+    
     public function indexAkademik()
     {
         // Contoh data dummy, nantinya bisa diambil dari database
-        $data = [
-            'user' => [
-                'name' => 'Albus Dumbledore',
-                'nip' => '198203092006041002',
-                'role' => 'Tenaga Kependidikan',
-                'periode' => 'Periode 2024-2029'
-            ],
-            'semester' => [
-                'current' => '2024/2025 Ganjil',
-                'period' => '19 Jan - 2 Mar'
-            ],
-            'progress' => [
-                'belum_usul' => ['count' => 1, 'total' => 6],
-                'dikonfirmasi' => ['count' => 4, 'total' => 6],
-                'belum_dikonfirmasi' => ['count' => 1, 'total' => 6]
-            ],
-            'status' => [
-                'bagiruang' => 'Belum Disetujui Dekan', // or 'disetujui', 'pending'
-            ]
-        ];
+        $akademik = DB::table('pegawai')
+                        ->join('users', 'pegawai.id_user', '=', 'users.id')
+                        ->crossJoin('periode_akademik')
+                        ->where('pegawai.id_user', auth()->id())
+                        ->orderBy('periode_akademik.created_at', 'desc') // Mengurutkan berdasarkan timestamp terbaru
+                        ->select(
+                            'pegawai.nama',
+                            'pegawai.nip',
+                            'periode_akademik.nama_periode'
+                        )
+                        ->first();
+        ;
 
-        return view('dashboardAkademik', compact('data'));
+        return view('dashboardAkademik', compact('akademik'));
     }
+    
+    
 }
